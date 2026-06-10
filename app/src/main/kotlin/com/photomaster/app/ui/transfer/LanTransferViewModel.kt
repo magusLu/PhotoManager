@@ -33,7 +33,7 @@ class LanTransferViewModel @Inject constructor(
     val state: StateFlow<TransferServerState> = _state.asStateFlow()
 
     private var server: LanTransferServer? = null
-    private var cachedItems: List<MediaItem> = emptyList()
+    @Volatile private var cachedItems: List<MediaItem> = emptyList()
 
     // ── Public actions ────────────────────────────────────────────────────────
 

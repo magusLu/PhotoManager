@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.WifiTethering
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,10 +45,15 @@ import com.photomaster.app.ui.components.MediaPermissionHandler
 @Composable
 fun HomeScreen(
     onFolderClick: (folderId: String, folderName: String) -> Unit,
+    onTransferClick: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     MediaPermissionHandler {
-        HomeContent(onFolderClick = onFolderClick, viewModel = viewModel)
+        HomeContent(
+            onFolderClick = onFolderClick,
+            onTransferClick = onTransferClick,
+            viewModel = viewModel,
+        )
     }
 }
 
@@ -55,6 +61,7 @@ fun HomeScreen(
 @Composable
 private fun HomeContent(
     onFolderClick: (folderId: String, folderName: String) -> Unit,
+    onTransferClick: () -> Unit,
     viewModel: HomeViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -65,6 +72,9 @@ private fun HomeContent(
             TopAppBar(
                 title = { Text("PhotoMaster") },
                 actions = {
+                    IconButton(onClick = onTransferClick) {
+                        Icon(Icons.Filled.WifiTethering, contentDescription = "传到电脑")
+                    }
                     IconButton(onClick = { viewModel.loadFolders() }) {
                         Icon(Icons.Filled.Refresh, contentDescription = "刷新")
                     }

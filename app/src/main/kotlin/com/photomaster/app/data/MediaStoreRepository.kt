@@ -66,8 +66,9 @@ class MediaStoreRepository @Inject constructor(
                 val mimeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE)
                 val ownerCol = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                     cursor.getColumnIndex(MediaStore.MediaColumns.OWNER_PACKAGE_NAME) else -1
+                // IS_SCREENSHOT added in API 29; use string literal for safe compile
                 val screenshotCol = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                    cursor.getColumnIndex(MediaStore.MediaColumns.IS_SCREENSHOT) else -1
+                    cursor.getColumnIndex("is_screenshot") else -1
 
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(idCol)
@@ -104,10 +105,11 @@ class MediaStoreRepository @Inject constructor(
             MediaStore.MediaColumns.MIME_TYPE,
         )
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            base + arrayOf(
+            val extra = arrayOf(
                 MediaStore.MediaColumns.OWNER_PACKAGE_NAME,
-                MediaStore.MediaColumns.IS_SCREENSHOT,
+                "is_screenshot",  // IS_SCREENSHOT string literal for API compat
             )
+            base + extra
         } else base
     }
 

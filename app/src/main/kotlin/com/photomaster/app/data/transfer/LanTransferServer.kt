@@ -196,8 +196,6 @@ header .sub{font-size:.8rem;color:#888;margin-top:2px}
 <script>
 let items = [];
 let sel = new Set();
-let dlQueue = [];
-let dlIdx = 0;
 
 async function load() {
   document.getElementById('loading').style.display = 'block';

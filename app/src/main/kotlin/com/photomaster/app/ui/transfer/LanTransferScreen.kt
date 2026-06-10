@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.photomaster.app.domain.model.TransferServerState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -139,26 +140,15 @@ fun LanTransferScreen(
 
 @Composable
 private fun StatusCard(isRunning: Boolean, itemCount: Int) {
-    val (bg, icon, label, sublabel) = if (isRunning) {
-        arrayOf(
-            Color(0xFF1B5E20),
-            Icons.Filled.WifiTethering,
-            "传输服务已开启",
-            "共 $itemCount 个文件可下载",
-        )
-    } else {
-        arrayOf(
-            Color(0xFF1C1C2E),
-            Icons.Outlined.WifiOff,
-            "传输服务未开启",
-            "点击下方按钮启动服务",
-        )
-    }
+    val bg = if (isRunning) Color(0xFF1B5E20) else Color(0xFF1C1C2E)
+    val icon = if (isRunning) Icons.Filled.WifiTethering else Icons.Outlined.WifiOff
+    val label = if (isRunning) "传输服务已开启" else "传输服务未开启"
+    val sublabel = if (isRunning) "共 $itemCount 个文件可下载" else "点击下方按钮启动服务"
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = bg as Color,
+        color = bg,
         tonalElevation = 2.dp,
     ) {
         Row(
@@ -167,25 +157,21 @@ private fun StatusCard(isRunning: Boolean, itemCount: Int) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Icon(
-                imageVector = icon as androidx.compose.ui.graphics.vector.ImageVector,
+                imageVector = icon,
                 contentDescription = null,
                 tint = Color.White,
                 modifier = Modifier.size(32.dp),
             )
             Column {
-                Text(label as String, fontWeight = FontWeight.SemiBold, color = Color.White)
-                Text(
-                    sublabel as String,
-                    fontSize = 12.sp,
-                    color = Color.White.copy(alpha = .7f),
-                )
+                Text(label, fontWeight = FontWeight.SemiBold, color = Color.White)
+                Text(sublabel, fontSize = 12.sp, color = Color.White.copy(alpha = .7f))
             }
         }
     }
 }
 
 @Composable
-private fun QrSection(state: com.photomaster.app.domain.model.TransferServerState) {
+private fun QrSection(state: TransferServerState) {
     Box(
         modifier = Modifier.size(220.dp),
         contentAlignment = Alignment.Center,
