@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme — Compose handles visual theming internally.
+         We extend NoActionBar so Compose TopAppBar is the only one. -->
+    <style name="Theme.PhotoMaster" parent="android:Theme.Material.NoTitleBar">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+</resources>
