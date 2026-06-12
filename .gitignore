@@ -10,3 +10,7 @@
 local.properties
 app/release/
 app/schemas/
+
+# Keystore
+app/*.jks
+keystore.properties
