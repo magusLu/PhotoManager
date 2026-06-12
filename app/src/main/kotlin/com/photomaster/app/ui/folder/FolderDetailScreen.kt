@@ -26,16 +26,23 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import com.photomaster.app.ui.components.FolderPickerDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.photomaster.app.domain.model.MediaItem
 import com.photomaster.app.domain.model.PhotoFolder
+import com.photomaster.app.ui.components.FolderPickerDialog
 import com.photomaster.app.ui.components.MediaGrid
+import com.photomaster.app.ui.components.PhotoViewerDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,6 +53,9 @@ fun FolderDetailScreen(
     viewModel: FolderDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var viewingItem by remember { mutableStateOf<MediaItem?>(null) }
+    // 单张移动：待选目标的图片
+    var movingItem by remember { mutableStateOf<MediaItem?>(null) }
 
     // Android 11+ 系统删除弹窗 Launcher
     val deleteSystemLauncher = rememberLauncherForActivityResult(
@@ -104,18 +114,44 @@ fun FolderDetailScreen(
                     MediaGrid(
                         items = uiState.folder!!.items,
                         selectedIds = uiState.selectedIds,
-                        onItemClick = { item ->
-                            if (uiState.isSelectMode) viewModel.toggleItem(item)
-                            // else open viewer (future enhancement)
-                        },
-                        onItemLongClick = { item ->
-                            viewModel.enterSelectMode(item)
-                        },
+                        isSelectMode = uiState.isSelectMode,
+                        onItemView = { item -> viewingItem = item },
+                        onItemMove = if (viewModel.availableTargetFolders().isNotEmpty()) {
+                            { item -> movingItem = item }
+                        } else null,
+                        onItemToggle = { item -> viewModel.toggleItem(item) },
+                        onItemLongClick = { item -> viewModel.enterSelectMode(item) },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
         }
+    }
+
+    // Full-screen photo viewer（含单张移动功能）
+    viewingItem?.let { item ->
+        PhotoViewerDialog(
+            item = item,
+            onDismiss = { viewingItem = null },
+            availableFolders = viewModel.availableTargetFolders(),
+            onMove = { targetFolder ->
+                viewModel.moveSingleItem(item, targetFolder)
+                viewingItem = null
+            },
+        )
+    }
+
+    // 单张移动：从网格菜单触发的文件夹选择弹窗
+    movingItem?.let { item ->
+        FolderPickerDialog(
+            title = "移动到",
+            folders = viewModel.availableTargetFolders(),
+            onSelect = { targetFolder ->
+                viewModel.moveSingleItem(item, targetFolder)
+                movingItem = null
+            },
+            onDismiss = { movingItem = null },
+        )
     }
 
     // 删除确认弹窗
@@ -195,32 +231,4 @@ private fun SelectionTopBar(
     )
 }
 
-@Composable
-private fun FolderPickerDialog(
-    title: String,
-    folders: List<PhotoFolder>,
-    onSelect: (PhotoFolder) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            if (folders.isEmpty()) {
-                Text("没有可用的自建文件夹，请先在首页创建。")
-            } else {
-                Column {
-                    folders.forEach { folder ->
-                        TextButton(onClick = { onSelect(folder) }) {
-                            Text("📁 ${folder.name}（${folder.count} 张）")
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
-        }
-    )
-}
+// FolderPickerDialog 已移至 com.photomaster.app.ui.components.FolderPickerDialog

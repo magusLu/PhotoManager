@@ -23,7 +23,10 @@ class ClassifyMediaUseCase @Inject constructor(
     private val mediaStoreRepository: MediaStoreRepository,
     private val customFolderDao: CustomFolderDao,
 ) {
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    // ThreadLocal to avoid SimpleDateFormat concurrency issues in coroutines
+    private val dateFormat = ThreadLocal.withInitial {
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    }
 
     suspend operator fun invoke(): List<PhotoFolder> {
         val allMedia = mediaStoreRepository.queryAllMedia()
@@ -32,7 +35,7 @@ class ClassifyMediaUseCase @Inject constructor(
         // ── 1. 相机照片 ───────────────────────────────────────────────────────
         val cameraPhotos = allMedia.filter { it.isCameraPhoto }
         cameraPhotos
-            .groupBy { dateFormat.format(Date(it.dateTaken)) }
+            .groupBy { dateFormat.get()!!.format(Date(it.dateTaken)) }
             .forEach { (date, items) ->
                 folders += PhotoFolder(
                     id = "camera_$date",
@@ -46,7 +49,7 @@ class ClassifyMediaUseCase @Inject constructor(
         // ── 2. 截图 ───────────────────────────────────────────────────────────
         val screenshots = allMedia.filter { it.isScreenshot && it.isImage }
         screenshots
-            .groupBy { dateFormat.format(Date(it.dateTaken)) }
+            .groupBy { dateFormat.get()!!.format(Date(it.dateTaken)) }
             .forEach { (date, items) ->
                 folders += PhotoFolder(
                     id = "screenshot_$date",
@@ -60,7 +63,7 @@ class ClassifyMediaUseCase @Inject constructor(
         // ── 3. 相机视频 ───────────────────────────────────────────────────────
         val cameraVideos = allMedia.filter { it.isCameraVideo }
         cameraVideos
-            .groupBy { dateFormat.format(Date(it.dateTaken)) }
+            .groupBy { dateFormat.get()!!.format(Date(it.dateTaken)) }
             .forEach { (date, items) ->
                 folders += PhotoFolder(
                     id = "video_$date",
@@ -118,7 +121,7 @@ class ClassifyMediaUseCase @Inject constructor(
 
     /** 只返回今天的文件夹 */
     suspend fun invokeToday(): List<PhotoFolder> {
-        val today = dateFormat.format(Date())
+        val today = dateFormat.get()!!.format(Date())
         return invoke().filter { folder ->
             when (folder.type) {
                 FolderType.CAMERA -> folder.name == "拍摄_$today"

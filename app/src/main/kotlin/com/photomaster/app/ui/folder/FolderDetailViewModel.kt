@@ -57,7 +57,7 @@ class FolderDetailViewModel @Inject constructor(
                 val folder = all.find { it.id == folderId }
                 _uiState.update { it.copy(isLoading = false, folder = folder, allFolders = all) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: e.toString()) }
             }
         }
     }
@@ -113,6 +113,18 @@ class FolderDetailViewModel @Inject constructor(
             )
             hideMoveDialog()
             clearSelection()
+            load()
+        }
+    }
+
+    /** 单张图片直接移动（不经过多选模式）*/
+    fun moveSingleItem(item: MediaItem, targetFolder: PhotoFolder) {
+        viewModelScope.launch {
+            manageFolderUseCase.moveToCustomFolder(
+                folderId = targetFolder.customFolderId ?: return@launch,
+                folderName = targetFolder.name,
+                items = listOf(item),
+            )
             load()
         }
     }

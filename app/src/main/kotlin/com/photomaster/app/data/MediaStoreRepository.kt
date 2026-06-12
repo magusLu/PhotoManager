@@ -56,19 +56,22 @@ class MediaStoreRepository @Inject constructor(
         val projection = buildProjection()
         val sortOrder = "${MediaStore.MediaColumns.DATE_TAKEN} DESC"
 
-        return resolver.query(contentUri, projection, null, null, sortOrder)
-            ?.use { cursor ->
+        return try {
+            resolver.query(contentUri, projection, null, null, sortOrder)
+        } catch (e: Exception) {
+            null // Some devices/APIs may throw SecurityException
+        }?.use { cursor ->
                 val result = mutableListOf<MediaItem>()
-                val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
-                val nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
-                val pathCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.RELATIVE_PATH)
-                val dateCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_TAKEN)
-                val mimeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE)
+                // Use getColumnIndex (not OrThrow) for graceful handling on unusual devices
+                val idCol = cursor.getColumnIndex(MediaStore.MediaColumns._ID).takeIf { it >= 0 } ?: return emptyList()
+                val nameCol = cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME).takeIf { it >= 0 } ?: return emptyList()
+                val pathCol = cursor.getColumnIndex(MediaStore.MediaColumns.RELATIVE_PATH).takeIf { it >= 0 } ?: return emptyList()
+                val dateCol = cursor.getColumnIndex(MediaStore.MediaColumns.DATE_TAKEN).takeIf { it >= 0 } ?: return emptyList()
+                val mimeCol = cursor.getColumnIndex(MediaStore.MediaColumns.MIME_TYPE).takeIf { it >= 0 } ?: return emptyList()
                 val ownerCol = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                     cursor.getColumnIndex(MediaStore.MediaColumns.OWNER_PACKAGE_NAME) else -1
-                // IS_SCREENSHOT added in API 29; use string literal for safe compile
-                val screenshotCol = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                    cursor.getColumnIndex("is_screenshot") else -1
+                // IS_SCREENSHOT column unreliable across devices/emulators; use path fallback
+                val screenshotCol = -1
 
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(idCol)
@@ -105,26 +108,42 @@ class MediaStoreRepository @Inject constructor(
             MediaStore.MediaColumns.MIME_TYPE,
         )
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val extra = arrayOf(
-                MediaStore.MediaColumns.OWNER_PACKAGE_NAME,
-                "is_screenshot",  // IS_SCREENSHOT string literal for API compat
-            )
-            base + extra
+            base + arrayOf(MediaStore.MediaColumns.OWNER_PACKAGE_NAME)
         } else base
     }
 
     /**
-     * 删除一批媒体文件（直接从手机删除）。
-     * Android 10+ 会弹系统确认弹窗，需从 Activity 调用 [getDeleteRequest] 处理。
-     * Android 9 及以下：直接 delete。
+     * 删除一批媒体文件。
+     * - API < 30：直接删除，返回 true。
+     * - API 30+（Android 11+）：尝试直接删除（自建文件夹内、App 自己写入的文件可以直接删），
+     *   如果权限不足则返回 false，调用方应使用 [getDeleteRequest] 弹系统确认。
+     *   Worker 场景（无 UI）：在 API 30+ 上会跳过无权限的文件，不 crash。
      */
     suspend fun deleteMedia(uris: List<Uri>): Boolean = withContext(Dispatchers.IO) {
+        if (uris.isEmpty()) return@withContext true
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Caller should use MediaStore.createDeleteRequest — return flag to signal
-            return@withContext false // handled by UI layer
+            // On API 30+ we try direct delete; files we created can be deleted directly.
+            // Files from camera/other apps will throw RecoverableSecurityException.
+            var allSucceeded = true
+            uris.forEach { uri ->
+                try {
+                    val deleted = resolver.delete(uri, null, null)
+                    if (deleted == 0) allSucceeded = false
+                } catch (_: SecurityException) {
+                    // No permission to delete this file; caller may use getDeleteRequest
+                    allSucceeded = false
+                } catch (_: Exception) {
+                    allSucceeded = false
+                }
+            }
+            return@withContext allSucceeded
         }
-        uris.forEach { resolver.delete(it, null, null) }
-        true
+        try {
+            uris.forEach { resolver.delete(it, null, null) }
+            true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     /**

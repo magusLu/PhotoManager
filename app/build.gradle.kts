@@ -7,14 +7,14 @@ plugins {
 
 android {
     namespace = "com.photomaster.app"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.photomaster.app"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        targetSdk = 35
+        versionCode = 2
+        versionName = "1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Room schema export directory
@@ -49,7 +49,7 @@ android {
     // Kotlin 1.9.x: Compose compiler version must match the Compose BOM
     // BOM 2024.02.00 → compiler 1.5.8
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
+        kotlinCompilerExtensionVersion = "1.5.10"
     }
 }
 
@@ -86,11 +86,27 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
 
+    // Landscapist — shimmer placeholder + crossfade animation
+    implementation(libs.landscapist.coil)
+    implementation(libs.landscapist.animation)
+    implementation(libs.landscapist.placeholder)
+
+    // Shimmer skeleton loading
+    implementation(libs.compose.shimmer)
+
+    // Zoomable image viewer
+    implementation(libs.zoomable)
+
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
     // Accompanist Permissions
     implementation(libs.accompanist.permissions)
+
+    // WorkManager + Hilt integration
+    implementation(libs.work.runtime.ktx)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.work.compiler)
 
     // LAN transfer
     implementation(libs.nanohttpd)

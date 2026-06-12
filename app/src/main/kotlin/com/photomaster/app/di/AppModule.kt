@@ -3,6 +3,7 @@ package com.photomaster.app.di
 import android.content.Context
 import androidx.room.Room
 import com.photomaster.app.data.local.AppDatabase
+import com.photomaster.app.data.local.CleanRuleDao
 import com.photomaster.app.data.local.CustomFolderDao
 import dagger.Module
 import dagger.Provides
@@ -22,10 +23,17 @@ object AppModule {
             context,
             AppDatabase::class.java,
             "photomaster.db"
-        ).build()
+        )
+            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .build()
 
     @Provides
     @Singleton
     fun provideCustomFolderDao(db: AppDatabase): CustomFolderDao =
         db.customFolderDao()
+
+    @Provides
+    @Singleton
+    fun provideCleanRuleDao(db: AppDatabase): CleanRuleDao =
+        db.cleanRuleDao()
 }

@@ -8,6 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.photomaster.app.ui.folder.FolderDetailScreen
 import com.photomaster.app.ui.home.HomeScreen
+import com.photomaster.app.ui.settings.CleanRuleScreen
 import com.photomaster.app.ui.transfer.LanTransferScreen
 
 sealed class Screen(val route: String) {
@@ -17,6 +18,7 @@ sealed class Screen(val route: String) {
             "folder/${android.net.Uri.encode(folderId)}?folderName=${android.net.Uri.encode(folderName)}"
     }
     data object Transfer : Screen("transfer")
+    data object CleanRules : Screen("clean_rules")
 }
 
 @Composable
@@ -30,6 +32,9 @@ fun PhotoMasterNavGraph() {
                 },
                 onTransferClick = {
                     navController.navigate(Screen.Transfer.route)
+                },
+                onCleanRulesClick = {
+                    navController.navigate(Screen.CleanRules.route)
                 }
             )
         }
@@ -53,6 +58,9 @@ fun PhotoMasterNavGraph() {
         }
         composable(Screen.Transfer.route) {
             LanTransferScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Screen.CleanRules.route) {
+            CleanRuleScreen(onBack = { navController.popBackStack() })
         }
     }
 }

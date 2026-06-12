@@ -31,6 +31,18 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PhotoMaster">
 
+        <!-- 使用自定义 HiltWorkerFactory，禁用 WorkManager 默认初始化器 -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

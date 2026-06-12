@@ -72,12 +72,14 @@ class ManageFolderUseCase @Inject constructor(
                 mimeType = item.mimeType,
             )
             if (newUri != null) {
-                // 查询新文件的 ID
+                // 查询新文件的 ID；ID 无效时跳过（避免写入 -1L 到数据库）
                 val newId = extractMediaId(newUri)
-                customFolderDao.insertMappings(
-                    listOf(FolderMediaMappingEntity(folderId = folderId, mediaId = newId, isCopy = true))
-                )
-                succeeded += newId
+                if (newId > 0) {
+                    customFolderDao.insertMappings(
+                        listOf(FolderMediaMappingEntity(folderId = folderId, mediaId = newId, isCopy = true))
+                    )
+                    succeeded += newId
+                }
             }
         }
         return succeeded
